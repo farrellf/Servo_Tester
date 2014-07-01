@@ -1,0 +1,72 @@
+========================================================================================================
+
+The goal of this project was to advance my understand of the STM32F4 microcontroller and create a tangible item that I could use on a regular basis. This project would not be practical if you had to go out and buy all of the parts, but I had most of them lying around.
+
+========================================================================================================
+
+Parts Used:
+
+	1 STM32F0-Discovery development board
+	1 UC1608FB-based LCD with 240x90 resolution
+	1 Project box
+	2 Pushbutton assemblies: each with two pushbuttons, mounted on perf board, debounced in hardware
+	1 Power switch, modified to support:
+		4 servo connections
+		1 charging lead
+		1 external power lead
+		1 battery lead.
+
+========================================================================================================
+
+Source Code:
+
+	main.c and externs.h
+		The main() function and all globals are defined in main.c
+		main() sets up the timers and enters an infinite loop that updates the LCD
+		Externs for all of the globals are listed in externs.h		
+
+	uc1608fb.h and uc1608fb.c
+		A small library for the LCD controller.
+		A 16x8 pixel font is defined.
+		The pixels are stored in a pixel buffer which is periodically sent to the LCD.
+
+	simple_gpio.h and simple_gpio.c
+		A very small library that makes GPIO operations a little easier.
+		This allows pins to be referenced as "A0" etc., instead of splitting up the port and pin number.
+
+	screens.h and screens.c
+		Functions that draw the screen based on the values of the globals.
+
+	interrupts.h and interrupts.c
+		Interrupt service routines for the timers.
+
+========================================================================================================
+
+Understanding the Code
+
+	-Global variables are used to store the current state.
+
+	-The pushbuttons are connected to timer inputs. The timer ISRs increment or decrement the global variables when appropriate (ISRs enforce min/max values, etc.)
+
+	-When the increase or decrease pushbutton is held down, the corresponding timer repeats its action (increment or decrement,) ramping up in speed while the button is held down.
+
+	-An infinite loop in main() is used to update the pixel buffer, and then the LCD, several times per second.
+
+========================================================================================================
+
+License
+
+	The following files were written by myself (Farrell Farahbod) and I am releasing them into the public domain:
+
+		main.c
+		externs.h
+		interrupts.h
+		interrupts.c
+		screens.h
+		screens.c
+		uc1608fb.h
+		uc1608fb.c
+		simple_gpio.h
+		simple_gpio.c
+
+	The other files were NOT written by myself and are covered under different licenses. See each file for details.
