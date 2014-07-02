@@ -1,26 +1,18 @@
-/*********************************************************************************
- * SMALL LIBRARY FOR WRITING DATA TO UC1608FB LCD CONTROLLERS VIA BIT BANGING    *
- *********************************************************************************
- * The UC1608FB LCD controller supports up to 240x128 pixels but the LCD used in *
- * this project is 240x90.                                                       *
- *********************************************************************************
- * A 16x8 pixel font is used, allowing for 5.625 lines, each with 30 characters. *
- *********************************************************************************
- * The pixel buffer is also used as a splash screen when the device is turned    *
- * on. A black-and-white image can be converted into an array of bytes fairly    *
- * easily with The GIMP. Open or create a 240x96 pixel image, then rotate it     *
- * clockwise 90 degrees. Split the image into a bunch of 8px-wide columns, and   *
- * reverse the order of the columns. The first column becomes the last, etc.     *
- * Save the image as an XBM, and paste array from that file into the pixBuf[]    *
- * array below.                                                                  *
- *********************************************************************************/
+// Written by Farrell Farahbod
+// Last revised on 2014-07-01
+// This file is released into the public domain
 
-#include "uc1608fb.h"
-#include "stm32f0xx.h"
+#include "f0lib_lcd_tft1p4705.h"
 
-uint8_t pixBuf[240][12] = {0}; // optionally fill this with splash screen pixels
+enum GPIO_PORT data_port;
+enum GPIO_PIN cs;
+enum GPIO_PIN rs;
+enum GPIO_PIN wr;
+enum GPIO_PIN rd;
+enum GPIO_PIN reset;
 
-const uint16_t font[91][8] = {
+// A fixed-width font with characters 8px wide and 16px tall
+const uint16_t font_8x16[91][8] = {
 	{0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000}, // ASCII 32, space
 	{0b0000000000000000,0b0000000000000000,0b0011111111001100,0b0011111111001100,0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000}, // !
 	{0b0011111100000000,0b0011111100000000,0b0000000000000000,0b0000000000000000,0b0011111100000000,0b0011111100000000,0b0000000000000000,0b0000000000000000}, // "
@@ -114,132 +106,166 @@ const uint16_t font[91][8] = {
 	{0b0000110000001100,0b0000110000111100,0b0000110011111100,0b0000111111001100,0b0000111100001100,0b0000110000001100,0b0000000000000000,0b0000000000000000}  // z
 };
 
-// Send a byte (a command or pixel data) to the LCD.
-void lcd_write_register(enum REGISTER reg, uint8_t data) {
-	(data & (1 << 7)) ? (GPIOB->BSRR = 1 << 6) : (GPIOB->BSRR = 1 << 6 + 16);
-	(data & (1 << 6)) ? (GPIOB->BSRR = 1 << 7) : (GPIOB->BSRR = 1 << 7 + 16);
-	(data & (1 << 5)) ? (GPIOB->BSRR = 1 << 8) : (GPIOB->BSRR = 1 << 8 + 16);
-	(data & (1 << 4)) ? (GPIOB->BSRR = 1 << 9) : (GPIOB->BSRR = 1 << 9 + 16);
-	(data & (1 << 3)) ? (GPIOB->BSRR = 1 << 10) : (GPIOB->BSRR = 1 << 10 + 16);
-	(data & (1 << 2)) ? (GPIOB->BSRR = 1 << 11) : (GPIOB->BSRR = 1 << 11 + 16);
-	(data & (1 << 1)) ? (GPIOB->BSRR = 1 << 12) : (GPIOB->BSRR = 1 << 12 + 16);
-	(data & (1 << 0)) ? (GPIOB->BSRR = 1 << 13) : (GPIOB->BSRR = 1 << 13 + 16);
-	(reg == DATA)     ? (GPIOB->BSRR = 1 << 4) : (GPIOB->BSRR = 1 << 4 + 16);
-	//delay(1);
-	GPIOB->BSRR = 1 << 5 + 16;
-	//delay(1);
-	GPIOB->BSRR = 1 << 5;
-	//delay(1);
+void wait(uint32_t duration) {
+	volatile uint32_t dur = duration;
+	uint32_t i = 0;
+	for(i = 0; i < dur; i++);
 }
 
-// Initialize the LCD
-void lcd_init(enum GPIO_PIN _cd, enum GPIO_PIN _wr1, enum GPIO_PIN _d7, enum GPIO_PIN _d6, enum GPIO_PIN _d5,
-			  enum GPIO_PIN _d4, enum GPIO_PIN _d3, enum GPIO_PIN _d2, enum GPIO_PIN _d1, enum GPIO_PIN _d0) {
-	SysTick_Config(SystemCoreClock / 1000000);
+// This is a generic 8080 16bit register write function (not actually specific to this LCD)
+// If porting to a faster processor, you may need to add delays.
+// See datasheet pg. 159 for timing requirements.
+inline void write_lcd_register(uint16_t reg, uint16_t val){
+	gpio_low(cs);			// assert CS line
 	
-	// Copy pin values to the global variables
-	cd = _cd;
-	wr1 = _wr1;
-	d7 = _d7;
-	d6 = _d6;
-	d5 = _d5;
-	d4 = _d4;
-	d3 = _d3;
-	d2 = _d2;
-	d1 = _d1;
-	d0 = _d0;
-	
-	// Enable GPIO clocks and output mode for those pins
-	EnablePin(cd);
-	EnablePin(wr1);
-	EnablePin(d7);
-	EnablePin(d6);
-	EnablePin(d5);
-	EnablePin(d4);
-	EnablePin(d3);
-	EnablePin(d2);
-	EnablePin(d1);
-	EnablePin(d0);
+	GPIOA->ODR = reg;		// specify the register number
+	gpio_low(rs);			// RS low = specifying the register number
+	gpio_low(wr);			// start write
+	gpio_high(wr);			// end write
 
-	delay(40000); // Wait for LCD
-	delay(100000); // Wait 0.1s. This is not required, but works around power supplies with slow rise times.
+	GPIOA->ODR = val;		// specify the register value
+	gpio_high(rs);			// RS high = specifying the register value
+	gpio_low(wr);			// start write
+	gpio_high(wr);			// end write
 	
-	// The following commands are used by the Airtronics M11 radio.
-	// Commands 10 and 11 were removed because they do not seem to be needed.
-	lcd_write_register(COMMAND, 0b11100010); // 1 system reset
-	lcd_write_register(COMMAND, 0b00100000); // 2 mux rate, temp comp
-	lcd_write_register(COMMAND, 0b11000101); // 3 lcd mapping
-	lcd_write_register(COMMAND, 0b11101000); // 4 lcd bias
-	lcd_write_register(COMMAND, 0b10000001); // 5 gain and pot
-	lcd_write_register(COMMAND, 0b11000000); // 6 gain and pot
-	lcd_write_register(COMMAND, 0b10101111); // 7 display enable
-	lcd_write_register(COMMAND, 0b11101110); // 8 reset cursor mode
-	lcd_write_register(COMMAND, 0b01000000); // 9 start line = 0
-	//lcd_write_register(COMMAND, 0b10100101); // 10 all pixels on
-	//lcd_write_register(COMMAND, 0b10100100); // 11 all pixels off
-	lcd_write_register(COMMAND, 0b10001001); // 12 ram address control = 1
-	lcd_write_register(COMMAND, 0b10110000); // 13 page = 0
+	gpio_high(cs);			// deassert CS line
 }
 
-// Write one character to the pixel buffer.  line = 0-5, charOffset = 0-29, letter= ASCII 32-122
-void lcd_write_char16(uint8_t line, uint8_t charOffset, uint8_t letter) {
-	//if((line > 5) || charOffset > 29 || letter < 32 || letter > 122) return; // bad arguments
+uint16_t read_lcd_register(uint16_t reg) {
+	uint16_t value = 0;
+
+	gpio_low(cs);			// assert CS line
+	GPIOA->ODR = reg;			// specify the register number
+	gpio_low(rs);			// RS low = specifying the register number
+	gpio_low(wr);			// start write
+	gpio_high(wr);			// end write
+
+	GPIOA->MODER = 0;			// all pins = input mode
 	
-	line *= 2;
+	gpio_high(rs);			// RS high = requesting the register value
 	
-	pixBuf[(charOffset*8)+0][line]   = font[letter-32][0] >> 8;
-	pixBuf[(charOffset*8)+0][line+1] = font[letter-32][0] & 255;
-	pixBuf[(charOffset*8)+1][line]   = font[letter-32][1] >> 8;
-	pixBuf[(charOffset*8)+1][line+1] = font[letter-32][1] & 255;
-	pixBuf[(charOffset*8)+2][line]   = font[letter-32][2] >> 8;
-	pixBuf[(charOffset*8)+2][line+1] = font[letter-32][2] & 255;
-	pixBuf[(charOffset*8)+3][line]   = font[letter-32][3] >> 8;
-	pixBuf[(charOffset*8)+3][line+1] = font[letter-32][3] & 255;
-	pixBuf[(charOffset*8)+4][line]   = font[letter-32][4] >> 8;
-	pixBuf[(charOffset*8)+4][line+1] = font[letter-32][4] & 255;
-	pixBuf[(charOffset*8)+5][line]   = font[letter-32][5] >> 8;
-	pixBuf[(charOffset*8)+5][line+1] = font[letter-32][5] & 255;
-	pixBuf[(charOffset*8)+6][line]   = font[letter-32][6] >> 8;
-	pixBuf[(charOffset*8)+6][line+1] = font[letter-32][6] & 255;
-	pixBuf[(charOffset*8)+7][line]   = font[letter-32][7] >> 8;
-	pixBuf[(charOffset*8)+7][line+1] = font[letter-32][7] & 255;
+	gpio_low(rd);			// begin read
+	value = GPIOA->IDR;			// read the value
+	gpio_high(rd);			// end read
+
+	gpio_low(rd);			// begin read
+	value = GPIOA->IDR;			// read the value
+	gpio_high(rd);			// end read
+	
+	gpio_high(cs);			// deassert CS line
+	
+	GPIOA->MODER = 0b01010101010101010101010101010101;	// all pins = output mode
+	return value;
 }
 
-// Write one line to the pixel buffer, padding the end with spaces if needed.  line = 0-5, string = a c-string
-void lcd_write_line16(uint8_t line, char string[]) {
-	//if(line > 5) return; // bad argument
-	
+void write_lcd_pixel(uint16_t x, uint16_t y, uint16_t color) {
+	write_lcd_register(0x20, x);
+	write_lcd_register(0x21, y);
+	write_lcd_register(0x22, color);
+}
+
+void write_lcd_char(uint16_t col, uint16_t row, char c) {
+	uint16_t xoff = col*8;
+	uint16_t yoff = row*16;
+	for(uint8_t i = 0; i < 8; i++) {
+		for(uint8_t bit = 0; bit < 16; bit++) {
+			if(font_8x16[c-32][i] & (1 << 15-bit))
+				write_lcd_pixel(xoff+i, yoff+bit, 0xFFFF);
+			else
+				write_lcd_pixel(xoff+i, yoff+bit, 0x0000);
+		}
+	}
+}
+
+void write_lcd_string(uint16_t x, uint16_t y, char string[]){
 	uint8_t i = 0;
-	while((string[i] != 0) && (i < 30)) {
-		lcd_write_char16(line, i, string[i]);
-		i++;
-	}
-	
-	while(i < 30) {
-		lcd_write_char16(line, i, ' ');
+	while(string[i] != 0) {
+		write_lcd_char(x+i, y, string[i]);
 		i++;
 	}
 }
 
-// Draw an underline in the pixel buffer.  x1 = 0-29, x2 = 0-29, y = 0-4
-void lcd_write_underline(uint8_t x1, uint8_t x2, uint8_t y) {
-	//if((x1 > 29) || (x2 > 29) || (x2 <= x1) || (y > 4)) return; // bad argument
-	
-	uint8_t i;
-	for(i = x1*8; i <= x2*8+8; i++) {
-		pixBuf[i][(y*2)+1] |= (1 << 0);
-	}
-}
+void lcd_tft1p4705_setup(	enum GPIO_PORT data_pins_port,
+							enum GPIO_PIN cs_pin,
+							enum GPIO_PIN rs_pin,
+							enum GPIO_PIN wr_pin,
+							enum GPIO_PIN rd_pin,
+							enum GPIO_PIN reset_pin) {
+	data_port = data_pins_port;
+	cs = cs_pin;
+	rs = rs_pin;
+	wr = wr_pin;
+	rd = rd_pin;
+	reset = reset_pin;
 
-// Send the pixel buffer data to the LCD
-void lcd_write_pixbuf() {
-	uint8_t x, y;
-	
-	lcd_write_register(COMMAND, 0b10110000); // page = 0
-	lcd_write_register(COMMAND, 0b00000000); // column = 0 (byte1)
-	lcd_write_register(COMMAND, 0b00010000); // column = 0 (byte2)
-	
-	for(y = 0; y < 12; y++)
-		for(x = 0; x < 240; x++)			
-			lcd_write_register(DATA, pixBuf[x][y]);
+	// setup GPIOs
+	gpio_port_setup(data_port, OUTPUT, PUSH_PULL, TWO_MHZ, NO_PULL);
+	gpio_setup(cs, OUTPUT, PUSH_PULL, TWO_MHZ, NO_PULL, AF0);
+	gpio_setup(rs, OUTPUT, PUSH_PULL, TWO_MHZ, NO_PULL, AF0);
+	gpio_setup(wr, OUTPUT, PUSH_PULL, TWO_MHZ, NO_PULL, AF0);
+	gpio_setup(rd, OUTPUT, PUSH_PULL, TWO_MHZ, NO_PULL, AF0);
+	gpio_setup(reset, OUTPUT, PUSH_PULL, TWO_MHZ, NO_PULL, AF0);
+
+	// LCD reset sequence
+	gpio_high(reset);
+	wait(50000);
+	gpio_low(reset);
+	wait(50000);
+	gpio_high(reset);
+	gpio_high(cs);
+	gpio_high(rd);
+	gpio_high(wr);
+
+	// LCD init
+	write_lcd_register(0x0001, 0x003C); // portrait mode with (0,0) being the top left. top is the side opposite the LCD connector.
+	write_lcd_register(0x0002, 0x0100);
+	write_lcd_register(0x0003, 0x1030);
+	write_lcd_register(0x0008, 0x0808);
+	write_lcd_register(0x000A, 0x0500);
+	write_lcd_register(0x000B, 0x0000);
+	write_lcd_register(0x000C, 0x0770);
+	write_lcd_register(0x000D, 0x0000);
+	write_lcd_register(0x000E, 0x0001);
+	write_lcd_register(0x0011, 0x0406);
+	write_lcd_register(0x0012, 0x000E);
+	write_lcd_register(0x0013, 0x0222);
+	write_lcd_register(0x0014, 0x0015);
+	write_lcd_register(0x0015, 0x4277);
+	write_lcd_register(0x0016, 0x0000);
+	write_lcd_register(0x0030, 0x6A50);
+	write_lcd_register(0x0031, 0x00C9);
+	write_lcd_register(0x0032, 0xC7BE);
+	write_lcd_register(0x0033, 0x0003);
+	write_lcd_register(0x0036, 0x3443);
+	write_lcd_register(0x003B, 0x0000);
+	write_lcd_register(0x003C, 0x0000);
+	write_lcd_register(0x002C, 0x6A50);
+	write_lcd_register(0x002D, 0x00C9);
+	write_lcd_register(0x002E, 0xC7BE);
+	write_lcd_register(0x002F, 0x0003);
+	write_lcd_register(0x0035, 0x3443);
+	write_lcd_register(0x0039, 0x0000);
+	write_lcd_register(0x003A, 0x0000);
+	write_lcd_register(0x0028, 0x6A50);
+	write_lcd_register(0x0029, 0x00C9);
+	write_lcd_register(0x002A, 0xC7BE);
+	write_lcd_register(0x002B, 0x0003);
+	write_lcd_register(0x0034, 0x3443);
+	write_lcd_register(0x0037, 0x0000);
+	write_lcd_register(0x0038, 0x0000);
+	wait(50000);
+	write_lcd_register(0x0012, 0x200E);
+	wait(50000);
+	write_lcd_register(0x0012, 0x2003);
+	wait(50000);
+	write_lcd_register(0x0044, 0x013F);
+	write_lcd_register(0x0045, 0x0000);
+	write_lcd_register(0x0046, 0x01DF);
+	write_lcd_register(0x0047, 0x0000);
+	write_lcd_register(0x0020, 0x0000);
+	write_lcd_register(0x0021, 0x013F);
+	write_lcd_register(0x0007, 0x0012);	
+	wait(50000);
+	write_lcd_register(0x0007, 0x0017);
+	wait(50000);
 }

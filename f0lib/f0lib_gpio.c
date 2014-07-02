@@ -1,4 +1,5 @@
-// Authored by Farrell Farahbod, last revised on 2014-05-20
+// Written by Farrell Farahbod
+// Last revised on 2014-07-01
 // This file is released into the public domain
 
 #include "f0lib_gpio.h"
@@ -212,6 +213,47 @@ void gpio_setup(enum GPIO_PIN	pin,
 		*(baseAddr + 9) = regValue;
 }
 
+/**
+ * Prepares an entire GPIO port for use. This enables the appropriate GPIO clock and sets all the pin attributes.
+ *
+ * Example: gpio_port_setup(PORT_A, OUTPUT, PUSH_PULL, FIFTY_MHZ, NO_PULL);
+ *
+ * @param	port	port being configured
+ * @param	mode	input, output, alternate function or analog
+ * @param	type	push-pull or open-drain
+ * @param	speed	50MHz, 10MHz or 2MHz
+ * @param	pull	pull-up, pull-down or neither
+ */
+void gpio_port_setup(	enum GPIO_PORT	port,
+						enum GPIO_MODE	mode,
+						enum GPIO_TYPE	type,
+						enum GPIO_SPEED	speed,
+						enum GPIO_PULL	pull) {
+	enum GPIO_PIN firstPin;
+	switch(port) {
+		case PORT_A:
+			firstPin = PA0;
+			break;
+		case PORT_B:
+			firstPin = PB0;
+			break;
+		case PORT_C:
+			firstPin = PC0;
+			break;
+		case PORT_D:
+			firstPin = PD0;
+			break;
+		case PORT_E:
+			firstPin = PE0;
+			break;
+		case PORT_F:
+			firstPin = PF0;
+			break;
+	}
+	for(uint8_t i = 0; i < 16; i++) {
+		gpio_setup(firstPin++, mode, type, speed, pull, AF0);
+	}
+}
 
 /**
  * Change pin state to low. Pin mode must be set to output.

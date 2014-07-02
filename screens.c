@@ -8,7 +8,7 @@
 
 #include "screens.h"
 #include "externs.h"
-#include "uc1608fb.h"
+//#include "uc1608fb.h"
 
 void drawSweepScreen() {
 	/********************************
@@ -18,7 +18,7 @@ void drawSweepScreen() {
 	 *               CYCLES:       0*
 	 *>> COMPLETED       0 CYCLES <<*
 	 ********************************/
-	
+	/*
 	lcd_write_line16(0, "MODE:  Sweep  3pos  2pos  1pos");
 	
 	lcd_write_line16(1, "START:");
@@ -121,7 +121,7 @@ void drawSweepScreen() {
 		}
 	}
 	lcd_write_pixbuf();
-	
+	*/
 }
 
 void draw3posScreen() {
@@ -132,7 +132,7 @@ void draw3posScreen() {
 	 *POS3: 2100.0us CYCLES:       0*
 	 *>> COMPLETED       0 CYCLES <<*
 	 ********************************/
-	
+	/*
 	lcd_write_line16(0, "MODE:  Sweep  3pos  2pos  1pos");
 	
 	lcd_write_line16(1, "POS1: ");
@@ -253,6 +253,7 @@ void draw3posScreen() {
 	}
 	
 	lcd_write_pixbuf();
+	*/
 }
 
 void draw2posScreen() {
@@ -263,7 +264,7 @@ void draw2posScreen() {
 	 *               CYCLES:       0*
 	 *>> COMPLETED       0 CYCLES <<*
 	 ********************************/
-	
+	/*
 	lcd_write_line16(0, "MODE:  Sweep  3pos  2pos  1pos");
 	
 	lcd_write_line16(1, "POS1: ");
@@ -366,6 +367,7 @@ void draw2posScreen() {
 		}
 	}
 	lcd_write_pixbuf();
+	*/
 }
 
 
@@ -377,7 +379,7 @@ void draw1posScreen() {
 	 *                              *
 	 *                              *
 	 ********************************/
-	
+	/*
 	lcd_write_line16(0, "MODE:  Sweep  3pos  2pos  1pos");
 	
 	lcd_write_line16(1, "POS:  ");
@@ -452,12 +454,14 @@ void draw1posScreen() {
 		}
 	}
 	lcd_write_pixbuf();
+	*/
 }
 
 /*********************************************************************************
  * DRAW UNDERLINE BELOW CURRENTLY SELECTED OPTION                                *
  *********************************************************************************/
 void lcd_draw_current_underline() {
+	/*
 	if(currentlySelectedOption == MODE)
 		lcd_write_underline(0,3,0);
 		
@@ -500,4 +504,5 @@ void lcd_draw_current_underline() {
 		lcd_write_underline(0,2,1);
 	else if(currentlySelectedOption == ONEPOS_RATE)
 		lcd_write_underline(0,3,2);
+		*/
 }

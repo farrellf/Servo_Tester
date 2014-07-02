@@ -1,4 +1,5 @@
-// Authored by Farrell Farahbod, last revised on 2014-05-20
+// Written by Farrell Farahbod
+// Last revised on 2014-07-01
 // This file is released into the public domain
 
 /**
@@ -25,5 +26,6 @@
 #include "f0lib_spi.h"
 #include "f0lib_rf_cc2500.h"
 #include "f0lib_debug.h"
+#include "f0lib_lcd_tft1p4705.h"
 
 #endif

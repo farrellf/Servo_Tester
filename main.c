@@ -1,28 +1,9 @@
-/*********************************************************************************
- * THE FOLLOWING RESOURCES ARE USED:                                             *
- *                                                                               *
- *     LCD:                                                                      *
- *         -Pins B4, B5, B6, B7, B8, B9, B10, B11, B12, B13                      *
- *                                                                               *
- *     Pushbuttons:                                                              *
- *         -Left    Pin A2,  TIM15                                               *
- *         -Right   Pin A15, TIM2                                                *
- *         -Up      Pin A4,  TIM14                                               *
- *         -Down    Pin A6,  TIM16                                               *
- *                                                                               *
- *     PWM:                                                                      *
- *         -Pin A8, TIM1                                                         *
- *                                                                               *
- *     Blinking Underline:                                                       *
- *         -TIM6                                                                 *
- *********************************************************************************/
-
 #include "stm32f0xx.h"
-#include "core_cm0.h"
-
-#include "uc1608fb.h"
-#include "interrupts.h"
-#include "screens.h"
+#include "f0lib/f0lib.h"
+//#include "core_cm0.h"
+//#include "uc1608fb.h"
+//#include "interrupts.h"
+//#include "screens.h"
 
 /*********************************************************************************
  * PROGRAM STATE                                                                 *
@@ -68,6 +49,20 @@ volatile uint8_t drawUnderline = 0;					// 0 or 1 to draw or not draw an underli
  * MAIN                                                                          *
  *********************************************************************************/
 int main() {
+	// setup the LCD
+	lcd_tft1p4705_setup(PORT_A, PC13, PC10, PC11, PC12, PC14); // DB0-15 gpio port, cs, rs, wr, rd, reset
+
+	// fill the LCD with a black background
+	for(uint32_t loop = 0; loop < (320*480); loop++) {
+		write_lcd_register(0x0022, 0x0000);
+	}
+
+	// draw some text
+	write_lcd_string(0, 0, "Hello world!");
+
+
+	// old code base
+	/*
 	lcd_init(B4, B5, B6, B7, B8, B9, B10, B11, B12, B13);	// CD, WR1, D7, D6, D5, D4, D3, D2, D1, D0
 	
 	// To optimize this project for the slower F0 MCU, the lcd_write_register() function has the pins
@@ -168,4 +163,5 @@ int main() {
 		else if(currentMode == ONE_POS)
 			draw1posScreen();
 	}
+	*/
 }

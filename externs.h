@@ -45,5 +45,5 @@ extern volatile uint16_t onePos_position;
 extern volatile uint16_t onePos_rate;
 
 // LCD pixel buffer and 16x8 font
-extern uint8_t pixBuf[240][12];
-extern const uint16_t font[91][8];
+//extern uint8_t pixBuf[240][12];
+//extern const uint16_t font[91][8];
