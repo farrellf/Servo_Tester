@@ -7,7 +7,7 @@ CC=arm-none-eabi-gcc
 OBJCOPY=arm-none-eabi-objcopy
 
 # debugging and optimization flags
-CFLAGS   = -g -O2
+CFLAGS   = -g -O2 -std=c99
 CFLAGS  += -Wl,--gc-sections
 #CFLAGS += -ffunction-sections -fdata-sections
 
