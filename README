@@ -1,3 +1,8 @@
+*** THIS README IS HOPELESSLY OUT OF DATE.
+*** THE CODE IS CURRENTLY BEING CLEANED UP AND IMPROVED.
+*** SEE GIT LOGS AND DON'T EXPECT ANYTHING REMOTELY USABLE RIGHT NOW :)
+*** THE TEXT BELOW WILL BE UPDATED WHEN THE CODE BASE IS IN A USABLE STATE.
+
 ========================================================================================================
 
 The goal of this project was to advance my understand of the STM32F4 microcontroller and create a tangible item that I could use on a regular basis. This project would not be practical if you had to go out and buy all of the parts, but I had most of them lying around.
