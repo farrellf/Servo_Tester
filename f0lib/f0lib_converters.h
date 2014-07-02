@@ -1,4 +1,5 @@
-// Authored by Farrell Farahbod, last revised on 2014-05-20
+// Written by Farrell Farahbod
+// Last revised on 2014-07-01
 // This file is released into the public domain
 
 /** Basic example:
@@ -35,3 +36,5 @@ char* uint32_to_dec_string(uint32_t num);
  * @returns		A pointer to a static c-string. The string must be "used" before calling this function again.
  */
 char* int16_to_dec_string(int16_t num);
+
+char* fixed_point_number_to_string(uint8_t leading_places, uint8_t trailing_places, uint32_t num);

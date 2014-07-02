@@ -1,3 +1,7 @@
+// Written by Farrell Farahbod
+// Last revised on 2014-07-01
+// This file is released into the public domain
+
 #include "stm32f0xx.h"
 #include "f0lib/f0lib.h"
 //#include "core_cm0.h"
@@ -54,12 +58,16 @@ int main() {
 
 	// fill the LCD with a black background
 	for(uint32_t loop = 0; loop < (320*480); loop++) {
-		write_lcd_register(0x0022, 0x0000);
+		lcd_write_register(0x0022, 0x0000);
 	}
 
 	// draw some text
-	write_lcd_string(0, 0, "Hello world!");
-
+	lcd_printf(0, 0, "Hello world!");								// Hello world!
+	lcd_printf(0, 1, "3 as a signed 16bit int is %d", 3);			// ... +00003
+	lcd_printf(0, 2, "69 as an unsigned 32bit int is %u", 69);		// ... 0000000069
+	lcd_printf(0, 3, "1234 as binary is %b", 1234);					// ... 0000 0000 0000 0000 0000 0100 1101 0010
+	lcd_printf(0, 4, "\"myString\" as a string is %s", "myString"); // ... myString
+	lcd_printf(0, 5, "98765 divided by 10 is %p51", 98765);			// ... 09876.5
 
 	// old code base
 	/*

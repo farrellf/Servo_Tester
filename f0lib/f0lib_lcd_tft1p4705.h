@@ -4,6 +4,7 @@
 
 #include "stm32f0xx.h"
 #include "f0lib_gpio.h"
+#include "stdarg.h"
 
 #ifndef F0LIB_LCD_TFT1P4705
 #define F0LIB_LCD_TFT1P4705
@@ -22,14 +23,16 @@ void lcd_tft1p4705_setup(	enum GPIO_PORT data_pins_port,
 // This is a generic 8080 16bit register write function (not actually specific to this LCD)
 // If porting to a faster processor, you may need to add delays.
 // See datasheet pg. 159 for timing requirements.
-void write_lcd_register(uint16_t reg, uint16_t val);
+void lcd_write_register(uint16_t reg, uint16_t val);
 
-uint16_t read_lcd_register(uint16_t reg);
+uint16_t lcd_read_register(uint16_t reg);
 
-void write_lcd_pixel(uint16_t x, uint16_t y, uint16_t color);
+void lcd_write_pixel(uint16_t x, uint16_t y, uint16_t color);
 
-void write_lcd_char(uint16_t col, uint16_t row, char c);
+void lcd_write_char(uint16_t col, uint16_t row, char c);
 
-void write_lcd_string(uint16_t x, uint16_t y, char string[]);
+void lcd_write_string(uint16_t x, uint16_t y, char string[]);
+
+void lcd_printf(uint16_t x, uint16_t y, char s[], ...);
 
 #endif

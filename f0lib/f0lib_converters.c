@@ -1,4 +1,5 @@
-// Authored by Farrell Farahbod, last revised on 2014-05-20
+// Written by Farrell Farahbod
+// Last revised on 2014-07-01
 // This file is released into the public domain
 
 #include "stm32f0xx.h"
@@ -11,7 +12,8 @@
  * @returns		A pointer to a static c-string. The string must be "used" before calling this function again.
  */
 char* uint32_to_bin_string(uint32_t num) {
-	static char numString[37] = {0};
+	static char numString[] = "0000 0000 0000 0000 0000 0000 0000 0000";
+	
 	int8_t i = 31; // current bit
 	uint8_t j = 0; // current string index
 	
@@ -71,5 +73,26 @@ char* int16_to_dec_string(int16_t num) {
 	if(num / 10 % 10) numString[4] = num / 10 % 10 + 48; else numString[4] = '0';
 	numString[5] = num % 10 + 48;
 
+	return numString;
+}
+
+char* fixed_point_number_to_string(uint8_t leading_places, uint8_t trailing_places, uint32_t num) {
+	static char numString[12] = {0}; // assuming num requres <= 10 places
+	for(uint8_t i = 0; i < 12; i++)
+		numString[i] = 0;
+
+	uint8_t index = leading_places + trailing_places;
+	while(trailing_places > 0) {
+		numString[index--] = (num % 10) + 48;
+		num /= 10;
+		trailing_places--;
+	}
+	numString[index--] = '.';
+	while(leading_places > 0) {
+		numString[index--] = (num % 10) + 48;
+		num /= 10;
+		leading_places--;
+	}
+	
 	return numString;
 }

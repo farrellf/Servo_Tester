@@ -3,6 +3,7 @@
 // This file is released into the public domain
 
 #include "f0lib_lcd_tft1p4705.h"
+#include "f0lib_converters.h"
 
 enum GPIO_PORT data_port;
 enum GPIO_PIN cs;
@@ -115,7 +116,7 @@ void wait(uint32_t duration) {
 // This is a generic 8080 16bit register write function (not actually specific to this LCD)
 // If porting to a faster processor, you may need to add delays.
 // See datasheet pg. 159 for timing requirements.
-inline void write_lcd_register(uint16_t reg, uint16_t val){
+inline void lcd_write_register(uint16_t reg, uint16_t val){
 	gpio_low(cs);			// assert CS line
 	
 	GPIOA->ODR = reg;		// specify the register number
@@ -131,7 +132,7 @@ inline void write_lcd_register(uint16_t reg, uint16_t val){
 	gpio_high(cs);			// deassert CS line
 }
 
-uint16_t read_lcd_register(uint16_t reg) {
+uint16_t lcd_read_register(uint16_t reg) {
 	uint16_t value = 0;
 
 	gpio_low(cs);			// assert CS line
@@ -158,30 +159,75 @@ uint16_t read_lcd_register(uint16_t reg) {
 	return value;
 }
 
-void write_lcd_pixel(uint16_t x, uint16_t y, uint16_t color) {
-	write_lcd_register(0x20, x);
-	write_lcd_register(0x21, y);
-	write_lcd_register(0x22, color);
+void lcd_write_pixel(uint16_t x, uint16_t y, uint16_t color) {
+	lcd_write_register(0x20, x);
+	lcd_write_register(0x21, y);
+	lcd_write_register(0x22, color);
 }
 
-void write_lcd_char(uint16_t col, uint16_t row, char c) {
+void lcd_write_char(uint16_t col, uint16_t row, char c) {
 	uint16_t xoff = col*8;
 	uint16_t yoff = row*16;
 	for(uint8_t i = 0; i < 8; i++) {
 		for(uint8_t bit = 0; bit < 16; bit++) {
 			if(font_8x16[c-32][i] & (1 << 15-bit))
-				write_lcd_pixel(xoff+i, yoff+bit, 0xFFFF);
+				lcd_write_pixel(xoff+i, yoff+bit, 0xFFFF);
 			else
-				write_lcd_pixel(xoff+i, yoff+bit, 0x0000);
+				lcd_write_pixel(xoff+i, yoff+bit, 0x0000);
 		}
 	}
 }
 
-void write_lcd_string(uint16_t x, uint16_t y, char string[]){
+void lcd_write_string(uint16_t x, uint16_t y, char string[]){
 	uint8_t i = 0;
 	while(string[i] != 0) {
-		write_lcd_char(x+i, y, string[i]);
+		lcd_write_char(x+i, y, string[i]);
 		i++;
+	}
+}
+
+void lcd_printf(uint16_t x, uint16_t y, char s[], ...) {
+	va_list arglist;
+	va_start(arglist, s);
+
+	// parse the format string
+	uint32_t i = 0;
+	while(s[i] != 0) {
+		if(s[i] != '%') { // normal char
+			lcd_write_char(x+i, y, s[i]);
+			i++;
+			continue;
+		}
+		
+		i++; // skip past the % to the format specifier
+		switch(s[i]) {
+			case '%':
+				lcd_write_char(x+i, y, s[i]);
+				i++;
+				break;
+			case 'd': // int16
+				lcd_write_string(x+i, y, int16_to_dec_string(va_arg(arglist, int)));
+				i++;
+				break;
+			case 'u': // uint32
+				lcd_write_string(x+i, y, uint32_to_dec_string(va_arg(arglist, uint32_t)));
+				i++;
+				break;	
+			case 'b': // binary
+				lcd_write_string(x+i, y, uint32_to_bin_string(va_arg(arglist, uint32_t)));
+				i++;
+				break;
+			case 's': // string
+				lcd_write_string(x+i, y, va_arg(arglist, char*));
+				i++;
+				break;
+			case 'p': // fixed point
+				lcd_write_string(x+i, y, fixed_point_number_to_string(s[i+1] - 48, s[i+2] - 48, va_arg(arglist, uint32_t)));
+				i+=3;
+				break;
+			default:
+				return; // invalid format specifier
+		}
 	}
 }
 
@@ -217,55 +263,55 @@ void lcd_tft1p4705_setup(	enum GPIO_PORT data_pins_port,
 	gpio_high(wr);
 
 	// LCD init
-	write_lcd_register(0x0001, 0x003C); // portrait mode with (0,0) being the top left. top is the side opposite the LCD connector.
-	write_lcd_register(0x0002, 0x0100);
-	write_lcd_register(0x0003, 0x1030);
-	write_lcd_register(0x0008, 0x0808);
-	write_lcd_register(0x000A, 0x0500);
-	write_lcd_register(0x000B, 0x0000);
-	write_lcd_register(0x000C, 0x0770);
-	write_lcd_register(0x000D, 0x0000);
-	write_lcd_register(0x000E, 0x0001);
-	write_lcd_register(0x0011, 0x0406);
-	write_lcd_register(0x0012, 0x000E);
-	write_lcd_register(0x0013, 0x0222);
-	write_lcd_register(0x0014, 0x0015);
-	write_lcd_register(0x0015, 0x4277);
-	write_lcd_register(0x0016, 0x0000);
-	write_lcd_register(0x0030, 0x6A50);
-	write_lcd_register(0x0031, 0x00C9);
-	write_lcd_register(0x0032, 0xC7BE);
-	write_lcd_register(0x0033, 0x0003);
-	write_lcd_register(0x0036, 0x3443);
-	write_lcd_register(0x003B, 0x0000);
-	write_lcd_register(0x003C, 0x0000);
-	write_lcd_register(0x002C, 0x6A50);
-	write_lcd_register(0x002D, 0x00C9);
-	write_lcd_register(0x002E, 0xC7BE);
-	write_lcd_register(0x002F, 0x0003);
-	write_lcd_register(0x0035, 0x3443);
-	write_lcd_register(0x0039, 0x0000);
-	write_lcd_register(0x003A, 0x0000);
-	write_lcd_register(0x0028, 0x6A50);
-	write_lcd_register(0x0029, 0x00C9);
-	write_lcd_register(0x002A, 0xC7BE);
-	write_lcd_register(0x002B, 0x0003);
-	write_lcd_register(0x0034, 0x3443);
-	write_lcd_register(0x0037, 0x0000);
-	write_lcd_register(0x0038, 0x0000);
+	lcd_write_register(0x0001, 0x003C); // portrait mode with (0,0) being the top left. top is the side opposite the LCD connector.
+	lcd_write_register(0x0002, 0x0100);
+	lcd_write_register(0x0003, 0x1030);
+	lcd_write_register(0x0008, 0x0808);
+	lcd_write_register(0x000A, 0x0500);
+	lcd_write_register(0x000B, 0x0000);
+	lcd_write_register(0x000C, 0x0770);
+	lcd_write_register(0x000D, 0x0000);
+	lcd_write_register(0x000E, 0x0001);
+	lcd_write_register(0x0011, 0x0406);
+	lcd_write_register(0x0012, 0x000E);
+	lcd_write_register(0x0013, 0x0222);
+	lcd_write_register(0x0014, 0x0015);
+	lcd_write_register(0x0015, 0x4277);
+	lcd_write_register(0x0016, 0x0000);
+	lcd_write_register(0x0030, 0x6A50);
+	lcd_write_register(0x0031, 0x00C9);
+	lcd_write_register(0x0032, 0xC7BE);
+	lcd_write_register(0x0033, 0x0003);
+	lcd_write_register(0x0036, 0x3443);
+	lcd_write_register(0x003B, 0x0000);
+	lcd_write_register(0x003C, 0x0000);
+	lcd_write_register(0x002C, 0x6A50);
+	lcd_write_register(0x002D, 0x00C9);
+	lcd_write_register(0x002E, 0xC7BE);
+	lcd_write_register(0x002F, 0x0003);
+	lcd_write_register(0x0035, 0x3443);
+	lcd_write_register(0x0039, 0x0000);
+	lcd_write_register(0x003A, 0x0000);
+	lcd_write_register(0x0028, 0x6A50);
+	lcd_write_register(0x0029, 0x00C9);
+	lcd_write_register(0x002A, 0xC7BE);
+	lcd_write_register(0x002B, 0x0003);
+	lcd_write_register(0x0034, 0x3443);
+	lcd_write_register(0x0037, 0x0000);
+	lcd_write_register(0x0038, 0x0000);
 	wait(50000);
-	write_lcd_register(0x0012, 0x200E);
+	lcd_write_register(0x0012, 0x200E);
 	wait(50000);
-	write_lcd_register(0x0012, 0x2003);
+	lcd_write_register(0x0012, 0x2003);
 	wait(50000);
-	write_lcd_register(0x0044, 0x013F);
-	write_lcd_register(0x0045, 0x0000);
-	write_lcd_register(0x0046, 0x01DF);
-	write_lcd_register(0x0047, 0x0000);
-	write_lcd_register(0x0020, 0x0000);
-	write_lcd_register(0x0021, 0x013F);
-	write_lcd_register(0x0007, 0x0012);	
+	lcd_write_register(0x0044, 0x013F);
+	lcd_write_register(0x0045, 0x0000);
+	lcd_write_register(0x0046, 0x01DF);
+	lcd_write_register(0x0047, 0x0000);
+	lcd_write_register(0x0020, 0x0000);
+	lcd_write_register(0x0021, 0x013F);
+	lcd_write_register(0x0007, 0x0012);	
 	wait(50000);
-	write_lcd_register(0x0007, 0x0017);
+	lcd_write_register(0x0007, 0x0017);
 	wait(50000);
 }
