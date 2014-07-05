@@ -77,21 +77,46 @@ char* int16_to_dec_string(int16_t num) {
 }
 
 char* fixed_point_number_to_string(uint8_t leading_places, uint8_t trailing_places, uint32_t num) {
-	static char numString[12] = {0}; // assuming num requres <= 10 places
+	static char numString[12] = {0}; // assuming num requires <= 10 places
 	for(uint8_t i = 0; i < 12; i++)
 		numString[i] = 0;
 
-	uint8_t index = leading_places + trailing_places;
-	while(trailing_places > 0) {
-		numString[index--] = (num % 10) + 48;
-		num /= 10;
-		trailing_places--;
-	}
-	numString[index--] = '.';
-	while(leading_places > 0) {
-		numString[index--] = (num % 10) + 48;
-		num /= 10;
-		leading_places--;
+	if(trailing_places > 0) {
+		uint8_t index = leading_places + trailing_places;
+		while(trailing_places > 0) {
+			numString[index--] = (num % 10) + 48;
+			num /= 10;
+			trailing_places--;
+		}
+		numString[index--] = '.';
+		if(leading_places > 0) {
+			numString[index--] = (num % 10) + 48;
+			num /= 10;
+			leading_places--;
+		}
+		while(leading_places > 0) {
+			if(num != 0)
+				numString[index--] = (num % 10) + 48;
+			else
+				numString[index--] = ' ';
+			num /= 10;
+			leading_places--;
+		}
+	} else {
+		uint8_t index = leading_places - 1;
+		if(leading_places > 0) {
+			numString[index--] = (num % 10) + 48;
+			num /= 10;
+			leading_places--;
+		}
+		while(leading_places > 0) {
+			if(num != 0)
+				numString[index--] = (num % 10) + 48;
+			else
+				numString[index--] = ' ';
+			num /= 10;
+			leading_places--;
+		}
 	}
 	
 	return numString;

@@ -12,6 +12,42 @@ enum GPIO_PIN wr;
 enum GPIO_PIN rd;
 enum GPIO_PIN reset;
 
+uint16_t background_color_normal = 0x0000; // black
+uint16_t foreground_color_normal = 0xFFFF; // white
+
+// used for currently selected option
+uint16_t background_color_highlight1 = 0x0000; // black
+uint16_t foreground_color_highlight1 = 0xF800; // red
+int8_t highlight1_line = 0;
+int8_t highlight1_startColumn = 0;
+int8_t highlight1_endColumn = 4;
+
+// used for currently unselected modes
+uint16_t background_color_highlight2 = 0x0000; // black
+uint16_t foreground_color_highlight2 = 0xA514; // medium gray
+int8_t highlight2_line = 0;
+int8_t highlight2_startColumn = 7;
+int8_t highlight2_endColumn = 29;
+
+// used for currently selected mode
+uint16_t background_color_highlight3 = 0x0000; // black
+uint16_t foreground_color_highlight3 = 0xFFFF; // white
+int8_t highlight3_line = 0;
+int8_t highlight3_startColumn = 7;
+int8_t highlight3_endColumn = 11;
+
+void lcd_tft1p4705_set_selected_mode(int8_t y, int8_t x1, int8_t x2) {
+	highlight3_line = y;
+	highlight3_startColumn = x1;
+	highlight3_endColumn = x2;
+}
+
+void lcd_tft1p4705_set_selected_option(int8_t y, int8_t x1, int8_t x2) {
+	highlight1_line = y;
+	highlight1_startColumn = x1;
+	highlight1_endColumn = x2;
+}
+
 // A fixed-width font with characters 8px wide and 16px tall
 const uint16_t font_8x16[91][8] = {
 	{0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000,0b0000000000000000}, // ASCII 32, space
@@ -166,14 +202,38 @@ void lcd_write_pixel(uint16_t x, uint16_t y, uint16_t color) {
 }
 
 void lcd_write_char(uint16_t col, uint16_t row, char c) {
+	uint16_t fgColor;
+	uint16_t bgColor;
+
+	if(row == highlight3_line && col >= highlight3_startColumn && col <= highlight3_endColumn) {
+		fgColor = foreground_color_highlight3;
+		bgColor = background_color_highlight3;
+	} else if(row == highlight2_line && col >= highlight2_startColumn && col <= highlight2_endColumn) {
+		fgColor = foreground_color_highlight2;
+		bgColor = background_color_highlight2;
+	} else if(row == highlight1_line && col >= highlight1_startColumn && col <= highlight1_endColumn) {
+		fgColor = foreground_color_highlight1;
+		bgColor = background_color_highlight1;
+	} else {
+		fgColor = foreground_color_normal;
+		bgColor = background_color_normal;
+	}
+	
 	uint16_t xoff = col*8;
 	uint16_t yoff = row*16;
 	for(uint8_t i = 0; i < 8; i++) {
 		for(uint8_t bit = 0; bit < 16; bit++) {
-			if(font_8x16[c-32][i] & (1 << 15-bit))
-				lcd_write_pixel(xoff+i, yoff+bit, 0xFFFF);
-			else
-				lcd_write_pixel(xoff+i, yoff+bit, 0x0000);
+			if(font_8x16[c-32][i] & (1 << 15-bit)) {
+				lcd_write_pixel(2*(xoff+i), 2*(yoff+bit), fgColor);
+				lcd_write_pixel(2*(xoff+i), 2*(yoff+bit)+1, fgColor);
+				lcd_write_pixel(2*(xoff+i)+1, 2*(yoff+bit), fgColor);
+				lcd_write_pixel(2*(xoff+i)+1, 2*(yoff+bit)+1, fgColor);
+			} else {
+				lcd_write_pixel(2*(xoff+i), 2*(yoff+bit), bgColor);
+				lcd_write_pixel(2*(xoff+i), 2*(yoff+bit)+1, bgColor);
+				lcd_write_pixel(2*(xoff+i)+1, 2*(yoff+bit), bgColor);
+				lcd_write_pixel(2*(xoff+i)+1, 2*(yoff+bit)+1, bgColor);
+			}
 		}
 	}
 }
@@ -186,6 +246,7 @@ void lcd_write_string(uint16_t x, uint16_t y, char string[]){
 	}
 }
 
+// FIXME: only %p corrects for the x position
 void lcd_printf(uint16_t x, uint16_t y, char s[], ...) {
 	va_list arglist;
 	va_start(arglist, s);
@@ -222,8 +283,12 @@ void lcd_printf(uint16_t x, uint16_t y, char s[], ...) {
 				i++;
 				break;
 			case 'p': // fixed point
-				lcd_write_string(x+i, y, fixed_point_number_to_string(s[i+1] - 48, s[i+2] - 48, va_arg(arglist, uint32_t)));
-				i+=3;
+				lcd_write_string(x+i-1, y, fixed_point_number_to_string(s[i+1] - 48, s[i+2] - 48, va_arg(arglist, uint32_t)));
+				x += s[i+1] - 48;
+				if(s[i+2] - 48 != 0)
+					x += 1 + s[i+2] - 48;
+				x -= 4;
+				i += 3;
 				break;
 			default:
 				return; // invalid format specifier

@@ -255,13 +255,7 @@ void gpio_port_setup(	enum GPIO_PORT	port,
 	}
 }
 
-/**
- * Change pin state to low. Pin mode must be set to output.
- *
- * Example: gpio_low(PA7);
- *
- * @param	pin		pin to make low
- */
+/* unoptimized version:
 void gpio_low(enum GPIO_PIN pin) {
 	uint8_t port = pin / 16;
 	uint8_t pinNum = pin % 16;
@@ -284,15 +278,9 @@ void gpio_low(enum GPIO_PIN pin) {
 			break;
 	}
  }
+*/
 
-
- /**
- * Change pin state to high. Pin mode must be set to output.
- *
- * Example: gpio_high(PA7);
- *
- * @param	pin		pin to make high
- */
+/* unoptimized version:
 void gpio_high(enum GPIO_PIN pin) {
 	uint8_t port = pin / 16;
 	uint8_t pinNum = pin % 16;
@@ -314,4 +302,5 @@ void gpio_high(enum GPIO_PIN pin) {
 			GPIOF->BSRR = (1 << pinNum);
 			break;
 	}
- }
+}
+*/

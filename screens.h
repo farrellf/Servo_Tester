@@ -6,4 +6,3 @@ void drawSweepScreen();
 void draw3posScreen();
 void draw2posScreen();
 void draw1posScreen();
-void lcd_draw_current_underline();

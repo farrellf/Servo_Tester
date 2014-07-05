@@ -1,5 +1,5 @@
 // Written by Farrell Farahbod
-// Last revised on 2014-07-01
+// Last revised on 2014-07-04
 // This file is released into the public domain
 
 #include "stm32f0xx.h"
@@ -18,6 +18,14 @@ enum GPIO_TYPE {PUSH_PULL, OPEN_DRAIN};
 enum GPIO_SPEED {TWO_MHZ, TEN_MHZ, FIFTY_MHZ};
 enum GPIO_PULL {NO_PULL, PULL_UP, PULL_DOWN};
 enum GPIO_AF {AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7};
+
+inline void gpio_high(enum GPIO_PIN pin) {
+	*(volatile uint32_t*) (0x48000000 + ((pin / 16) * 0x0400) + 0x18) = (1 << (pin % 16));
+}
+
+inline void gpio_low(enum GPIO_PIN pin) {
+	*(volatile uint32_t*) (0x48000000 + ((pin / 16) * 0x0400) + 0x28) = (1 << (pin % 16));
+}
 #endif
 
 /**
@@ -55,21 +63,3 @@ void gpio_port_setup(	enum GPIO_PORT	port,
 						enum GPIO_TYPE	type,
 						enum GPIO_SPEED	speed,
 						enum GPIO_PULL	pull);
-
-/**
- * Change pin state to low. Pin mode must be set to output.
- *
- * Example: gpio_low(PA7);
- *
- * @param	pin		pin to make low
- */
-void gpio_low(enum GPIO_PIN pin);
-
- /**
- * Change pin state to high. Pin mode must be set to output.
- *
- * Example: gpio_high(PA7);
- *
- * @param	pin		pin to make high
- */
-void gpio_high(enum GPIO_PIN pin);
