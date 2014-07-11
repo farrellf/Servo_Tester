@@ -9,8 +9,9 @@
 #ifndef F0LIB_LCD_TFT1P4705
 #define F0LIB_LCD_TFT1P4705
 
-void lcd_tft1p4705_set_selected_mode(int8_t y, int8_t x1, int8_t x2);
-void lcd_tft1p4705_set_selected_option(int8_t y, int8_t x1, int8_t x2);
+void lcd_set_color3(int8_t y, int8_t x1, int8_t x2);
+void lcd_set_color2(int8_t y, int8_t x1, int8_t x2);
+void lcd_set_color1(int8_t y, int8_t x1, int8_t x2);
 
 // A crude way to waste time, effectively NOPing. Duration does not have units but 500,000 ~= 0.5s
 void wait(uint32_t duration);

@@ -36,13 +36,19 @@ int8_t highlight3_line = 0;
 int8_t highlight3_startColumn = 7;
 int8_t highlight3_endColumn = 11;
 
-void lcd_tft1p4705_set_selected_mode(int8_t y, int8_t x1, int8_t x2) {
+void lcd_set_color3(int8_t y, int8_t x1, int8_t x2) {
 	highlight3_line = y;
 	highlight3_startColumn = x1;
 	highlight3_endColumn = x2;
 }
 
-void lcd_tft1p4705_set_selected_option(int8_t y, int8_t x1, int8_t x2) {
+void lcd_set_color2(int8_t y, int8_t x1, int8_t x2) {
+	highlight2_line = y;
+	highlight2_startColumn = x1;
+	highlight2_endColumn = x2;
+}
+
+void lcd_set_color1(int8_t y, int8_t x1, int8_t x2) {
 	highlight1_line = y;
 	highlight1_startColumn = x1;
 	highlight1_endColumn = x2;

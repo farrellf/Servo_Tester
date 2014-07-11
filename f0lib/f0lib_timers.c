@@ -1,7 +1,10 @@
-// Authored by Farrell Farahbod, last revised on 2014-05-20
+// Written by Farrell Farahbod
+// Last revised on 2014-07-09
 // This file is released into the public domain
 
 #include "f0lib_timers.h"
+#include "core_cm0.h"
+#include "stm32f0xx.h"
 
 /**
  * Configure a timer for PWM output. All channels of the same timer share the same period.
@@ -88,6 +91,25 @@ void timer_pwm_setup(TIM_TypeDef *timer, uint32_t prescaler, uint32_t arr, enum 
 	// force update, then clear the update flag
 	timer->EGR |= TIM_EGR_UG;
 	timer->SR &= ~TIM_SR_UIF;
+
+	// enable interrupt on update events
+	timer->DIER |= TIM_DIER_UIE;
+	if(timer == TIM1)
+		NVIC_EnableIRQ(TIM1_BRK_UP_TRG_COM_IRQn);
+	else if(timer == TIM2)
+		NVIC_EnableIRQ(TIM2_IRQn);
+	else if(timer == TIM3)
+		NVIC_EnableIRQ(TIM3_IRQn);
+	else if(timer == TIM6)
+		NVIC_EnableIRQ(TIM6_DAC_IRQn);
+	else if(timer == TIM14)
+		NVIC_EnableIRQ(TIM14_IRQn);
+	else if(timer == TIM15)
+		NVIC_EnableIRQ(TIM15_IRQn);
+	else if(timer == TIM16)
+		NVIC_EnableIRQ(TIM16_IRQn);
+	else if(timer == TIM17)
+		NVIC_EnableIRQ(TIM17_IRQn);
 
 	// main output enable is only needed for advanced control timers
 	if(timer == TIM1)
