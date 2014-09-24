@@ -1,77 +1,40 @@
-*** THIS README IS HOPELESSLY OUT OF DATE.
-*** THE CODE IS CURRENTLY BEING CLEANED UP AND IMPROVED.
-*** SEE GIT LOGS AND DON'T EXPECT ANYTHING REMOTELY USABLE RIGHT NOW :)
-*** THE TEXT BELOW WILL BE UPDATED WHEN THE CODE BASE IS IN A USABLE STATE.
+Servo Tester / Spectrum Analyzer / Tetris-like Game
 
-========================================================================================================
+Written by Farrell Farahbod < farrellfarahbod@gmail.com >
 
-The goal of this project was to advance my understand of the STM32F4 microcontroller and create a tangible item that I could use on a regular basis. This project would not be practical if you had to go out and buy all of the parts, but I had most of them lying around.
+====================================================================================
 
-========================================================================================================
+This project started as a servo tester back in 2012. It has since grown to include a 2.4GHz spectrum analyzer and an implementation of a Tetris-like arcade game. The original code base was my first significant project with a microcontroller, and it was a phenominal showcase of my inexperience ;) In mid-2014 I began the code refactoring process and added many features. This project has reached a usable state with only one feature still unimplemented -- bluetooth. I eventually plan to stream data out via bluetooth and write an Android app to graph the history of various data points and allow remote control of the servo tester features.
 
-Parts Used:
+====================================================================================
 
-	1 STM32F0-Discovery development board
-	1 UC1608FB-based LCD with 240x90 resolution
-	1 Project box
-	2 Pushbutton assemblies: each with two pushbuttons, mounted on perf board, debounced in hardware
-	1 Power switch, modified to support:
-		4 servo connections
-		1 charging lead
-		1 external power lead
-		1 battery lead.
+Navigating the code base:
 
-========================================================================================================
+1. Start with /settings.h, /globals.c and /main.c
+2. The ISRs are defined in /isrs.c
+3. The screens (servo tester modes, spectrum analyzer modes, and the arcade game) are defined in the various /screen_*.c files.
+4. My collection of anything remotely reusable is in /f0lib/. It's a crude library, not really ready for sharing, but it's used in this project. If you plan to use it elsewhere you MUST read the function implementations as many aspects are incomplete or "fragile."
 
-Source Code:
+====================================================================================
 
-	main.c and externs.h
-		The main() function and all globals are defined in main.c
-		main() sets up the timers and enters an infinite loop that updates the LCD
-		Externs for all of the globals are listed in externs.h		
+License:
 
-	uc1608fb.h and uc1608fb.c
-		A small library for the LCD controller.
-		A 16x8 pixel font is defined.
-		The pixels are stored in a pixel buffer which is periodically sent to the LCD.
+The three files in /stm/ were NOT written by myself, see each file for it's license.
 
-	simple_gpio.h and simple_gpio.c
-		A very small library that makes GPIO operations a little easier.
-		This allows pins to be referenced as "A0" etc., instead of splitting up the port and pin number.
+All of the other files were written by myself and are released into the public domain (this is also indicated at the top of each file.) Use the code however you wish.
 
-	screens.h and screens.c
-		Functions that draw the screen based on the values of the globals.
+====================================================================================
 
-	interrupts.h and interrupts.c
-		Interrupt service routines for the timers.
+Hardware used:
 
-========================================================================================================
+	1 STM32F051R8T6 microcontroller
+	1 TFT1P4705 LCD module with backlight (320x480, 16bit RGB565, D51E5TA7601 controller IC)
+	1 CC2500 2.4GHz RF module (for the spectrum analyzer features)
+	1 HC05 Bluetooth 2.0 module
+	4 TI INA199A1 current sense amplifiers (50x gain)
+	4 10mOhm current shunt resistors (results in 6A fullscale readings with 12bits of resolution)
+	A power switch, 6V battery, lots of wires and a project box.
 
-Understanding the Code
+====================================================================================
 
-	-Global variables are used to store the current state.
-
-	-The pushbuttons are connected to timer inputs. The timer ISRs increment or decrement the global variables when appropriate (ISRs enforce min/max values, etc.)
-
-	-When the increase or decrease pushbutton is held down, the corresponding timer repeats its action (increment or decrement,) ramping up in speed while the button is held down.
-
-	-An infinite loop in main() is used to update the pixel buffer, and then the LCD, several times per second.
-
-========================================================================================================
-
-License
-
-	The following files were written by myself (Farrell Farahbod) and I am releasing them into the public domain:
-
-		main.c
-		externs.h
-		interrupts.h
-		interrupts.c
-		screens.h
-		screens.c
-		uc1608fb.h
-		uc1608fb.c
-		simple_gpio.h
-		simple_gpio.c
-
-	The other files were NOT written by myself and are covered under different licenses. See each file for details.
+A blog post with photos and video clips is available online at:  http://www.farrellf.com

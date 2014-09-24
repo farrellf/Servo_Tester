@@ -1,4 +1,5 @@
-// Authored by Farrell Farahbod, last revised on 2014-05-20
+// Written by Farrell Farahbod
+// Last revised on 2014-07-31
 // This file is released into the public domain
 
 /** Basic example:
@@ -44,7 +45,11 @@
  * PC4		ADC_IN14
  * PC5		ADC_IN15
  */
-
+ 
+#ifndef F0LIB_ADC
+#define F0LIB_ADC
+enum ADC_CLOCK_SOURCE {CLOCK_HSI14, CLOCK_TIM1, CLOCK_TIM2, CLOCK_TIM3, CLOCK_TIM15};
+#endif
  
 /**
  * Setup the ADC with one or more channels.
@@ -54,4 +59,4 @@
  * @param ch1		first channel
  * @param ...		additional channels
  */
-void adc_setup(uint8_t channels, enum GPIO_PIN ch1, ...);
+void adc_setup(enum ADC_CLOCK_SOURCE clockSource, uint8_t channels, enum GPIO_PIN ch1, ...);

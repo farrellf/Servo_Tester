@@ -61,6 +61,7 @@ void cc2500_setup(SPI_TypeDef *spi, enum GPIO_PIN clk, enum GPIO_PIN miso, enum 
 	
 	spi_setup(spi, PRESCALE_8, clk, miso, mosi);
 	gpio_setup(cs, OUTPUT, PUSH_PULL, FIFTY_MHZ, NO_PULL, AF0);
+	gpio_high(cs_pin);
 	
 	// ensure cc2500 registers contain their reset values
 	cc2500_send_strobe(SRES);
@@ -135,8 +136,8 @@ uint8_t cc2500_get_channel() {
  * @returns			RSSI value
  */
 uint8_t cc2500_get_rssi() {
-	int8_t rawRssi= cc2500_write_register(RSSI, 0x00);
-	uint8_t normalized = rawRssi + 98; // (-128 to 127) -> (0 to 255) -> -30 to remove some offset
+	int8_t rawRssi = cc2500_write_register(RSSI, 0x00);
+	uint8_t normalized = rawRssi + 108; // (-128 to 127) -> (0 to 255) -> -20 to remove some offset
 	return normalized;
 }
 

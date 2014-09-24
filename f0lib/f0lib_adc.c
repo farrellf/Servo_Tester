@@ -1,4 +1,5 @@
-// Authored by Farrell Farahbod, last revised on 2014-05-20
+// Written by Farrell Farahbod
+// Last revised on 2014-07-31
 // This file is released into the public domain
 
 #include "f0lib_adc.h"
@@ -11,7 +12,7 @@
  * @param ch1		first channel
  * @param ...		additional channels
  */
-void adc_setup(uint8_t channels, enum GPIO_PIN ch1, ...) {
+void adc_setup(enum ADC_CLOCK_SOURCE clockSource, uint8_t channels, enum GPIO_PIN ch1, ...) {
 	va_list arglist;
 	va_start(arglist, ch1);
 
@@ -21,7 +22,12 @@ void adc_setup(uint8_t channels, enum GPIO_PIN ch1, ...) {
 	ADC1->CR |= ADC_CR_ADCAL;						// begin calibration
 	while((ADC1->CR & ADC_CR_ADCAL) != 0);			// wait until calibration is done
 
-ADC1->SMPR = 7; // sample at 14MHz / 252 = 55.5kHz
+	if(clockSource == CLOCK_HSI14) {
+		ADC1->SMPR = 7; // sample at 14MHz / 252 = 55.5kHz
+		ADC1->CFGR1 = ADC_CFGR1_CONT | ADC_CFGR1_WAIT;	// continuous mode, wait until samples are read before starting next conversion
+	} else if(clockSource == CLOCK_TIM1) {
+		ADC1->CFGR1 = ADC_CFGR1_WAIT | ADC_CFGR1_EXTEN_0; // trigger on tim1_trgo rising edge, wait until samples are read
+	}
 
 	gpio_setup(ch1, ANALOG, PUSH_PULL, FIFTY_MHZ, NO_PULL, AF0);
 	if(ch1 <= PA7)
@@ -42,8 +48,7 @@ ADC1->SMPR = 7; // sample at 14MHz / 252 = 55.5kHz
 			ADC1->CHSELR |= (1 << (pin % 16) + 10);
 		channels--;
 	}
-	
-	ADC1->CFGR1 |= ADC_CFGR1_CONT | ADC_CFGR1_WAIT;	// continuous mode, wait until samples are read before starting next conversion
+
 	ADC1->CR |= ADC_CR_ADEN;						// enable ADC
 	while((ADC1->ISR & ADC_ISR_ADRDY) == 0);		// wait until ADC is ready
 

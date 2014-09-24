@@ -7,7 +7,7 @@ CC=arm-none-eabi-gcc
 OBJCOPY=arm-none-eabi-objcopy
 
 # debugging and optimization flags
-CFLAGS   = -g -O2 -std=c99
+CFLAGS   = -g -O2 -std=c99 -Winline
 CFLAGS  += -Wl,--gc-sections
 #CFLAGS += -ffunction-sections -fdata-sections
 
@@ -52,7 +52,7 @@ debug_nemiver:
 # "make debug_cli" to debug using the arm-none-eabi-gdb command line tool.
 # "make debug_server" must be called first and left running while using arm-none-eabi-gdb.
 debug_cli:
-	arm-none-eabi-gdb --silent command=config_gdb.cfg firmware.elf
+	arm-none-eabi-gdb --silent --command=config_gdb.cfg firmware.elf
 
 clean:
 	rm -rf $(EXECUTABLE)

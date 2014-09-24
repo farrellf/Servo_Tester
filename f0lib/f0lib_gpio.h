@@ -26,6 +26,27 @@ inline void gpio_high(enum GPIO_PIN pin) {
 inline void gpio_low(enum GPIO_PIN pin) {
 	*(volatile uint32_t*) (0x48000000 + ((pin / 16) * 0x0400) + 0x28) = (1 << (pin % 16));
 }
+
+inline void gpio_set_mode(enum GPIO_PIN pin, enum GPIO_MODE mode) {
+	uint32_t value = *(volatile uint32_t*) (0x48000000 + ((pin / 16) * 0x0400) + 0x00);
+	if(mode == INPUT) {
+		value &= ~(1 << 2 * (pin % 16));
+		value &= ~(1 << 2 * (pin % 16) + 1);
+		*(volatile uint32_t*) (0x48000000 + ((pin / 16) * 0x0400) + 0x00) = value;
+	} else if(mode == OUTPUT) {
+		value |= (1 << 2 * (pin % 16));
+		value &= ~(1 << 2 * (pin % 16) + 1);
+		*(volatile uint32_t*) (0x48000000 + ((pin / 16) * 0x0400) + 0x00) = value;
+	} else if(mode == AF) {
+		value &= ~(1 << 2 * (pin % 16));
+		value |= (1 << 2 * (pin % 16) + 1);
+		*(volatile uint32_t*) (0x48000000 + ((pin / 16) * 0x0400) + 0x00) = value;
+	} else if(mode == ANALOG) {
+		value |= (1 << 2 * (pin % 16));
+		value |= (1 << 2 * (pin % 16) + 1);
+		*(volatile uint32_t*) (0x48000000 + ((pin / 16) * 0x0400) + 0x00) = value;
+	}
+}
 #endif
 
 /**
@@ -58,7 +79,7 @@ void gpio_setup(enum GPIO_PIN	pin,
  * @param	speed	50MHz, 10MHz or 2MHz
  * @param	pull	pull-up, pull-down or neither
  */
-void gpio_port_setup(	enum GPIO_PORT	port,
+void gpio_port_setup(	GPIO_TypeDef *port,
 						enum GPIO_MODE	mode,
 						enum GPIO_TYPE	type,
 						enum GPIO_SPEED	speed,

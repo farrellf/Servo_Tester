@@ -1,11 +1,11 @@
 // Written by Farrell Farahbod
-// Last revised on 2014-07-01
+// Last revised on 2014-08-02
 // This file is released into the public domain
 
 #include "f0lib_lcd_tft1p4705.h"
 #include "f0lib_converters.h"
 
-enum GPIO_PORT data_port;
+GPIO_TypeDef *data_port;
 enum GPIO_PIN cs;
 enum GPIO_PIN rs;
 enum GPIO_PIN wr;
@@ -161,12 +161,12 @@ void wait(uint32_t duration) {
 inline void lcd_write_register(uint16_t reg, uint16_t val){
 	gpio_low(cs);			// assert CS line
 	
-	GPIOA->ODR = reg;		// specify the register number
+	data_port->ODR = reg;	// specify the register number
 	gpio_low(rs);			// RS low = specifying the register number
 	gpio_low(wr);			// start write
 	gpio_high(wr);			// end write
 
-	GPIOA->ODR = val;		// specify the register value
+	data_port->ODR = val;	// specify the register value
 	gpio_high(rs);			// RS high = specifying the register value
 	gpio_low(wr);			// start write
 	gpio_high(wr);			// end write
@@ -178,26 +178,26 @@ uint16_t lcd_read_register(uint16_t reg) {
 	uint16_t value = 0;
 
 	gpio_low(cs);			// assert CS line
-	GPIOA->ODR = reg;			// specify the register number
+	data_port->ODR = reg;	// specify the register number
 	gpio_low(rs);			// RS low = specifying the register number
 	gpio_low(wr);			// start write
 	gpio_high(wr);			// end write
 
-	GPIOA->MODER = 0;			// all pins = input mode
+	data_port->MODER = 0;	// all pins = input mode
 	
 	gpio_high(rs);			// RS high = requesting the register value
 	
 	gpio_low(rd);			// begin read
-	value = GPIOA->IDR;			// read the value
+	value = data_port->IDR;	// read the value
 	gpio_high(rd);			// end read
 
 	gpio_low(rd);			// begin read
-	value = GPIOA->IDR;			// read the value
+	value = data_port->IDR;	// read the value
 	gpio_high(rd);			// end read
 	
 	gpio_high(cs);			// deassert CS line
 	
-	GPIOA->MODER = 0b01010101010101010101010101010101;	// all pins = output mode
+	data_port->MODER = 0b01010101010101010101010101010101;	// all pins = output mode
 	return value;
 }
 
@@ -206,6 +206,66 @@ void lcd_write_pixel(uint16_t x, uint16_t y, uint16_t color) {
 	lcd_write_register(0x21, y);
 	lcd_write_register(0x22, color);
 }
+
+inline void lcd_pixel_stream_start() {
+	gpio_low(cs); // assert CS line
+}
+
+inline void lcd_pixel_stream_move_cursor(uint32_t x, uint32_t y) {
+	data_port->ODR = 0x20;	// specify the register number
+	gpio_low(rs);			// RS low = specifying the register number
+	gpio_low(wr);			// start write
+	gpio_high(wr);			// end write
+
+	data_port->ODR = x;	// specify the register value
+	gpio_high(rs);			// RS high = specifying the register value
+	gpio_low(wr);			// start write
+	gpio_high(wr);			// end write
+
+	data_port->ODR = 0x21;	// specify the register number
+	gpio_low(rs);			// RS low = specifying the register number
+	gpio_low(wr);			// start write
+	gpio_high(wr);			// end write
+
+	data_port->ODR = y;	// specify the register value
+	gpio_high(rs);			// RS high = specifying the register value
+	gpio_low(wr);			// start write
+	gpio_high(wr);			// end write
+
+	data_port->ODR = 0x22;	// specify the register number
+	gpio_low(rs);			// RS low = specifying the register number
+	gpio_low(wr);			// start write
+	gpio_high(wr);			// end write
+
+	gpio_high(rs);			// RS high = specifying the register value
+}
+
+inline void lcd_pixel_stream_write_pixel(uint32_t pixel) {
+	data_port->ODR = pixel;	// specify the register value
+	gpio_low(wr);			// start write
+	gpio_high(wr);			// end write
+}
+
+inline void lcd_pixel_stream_stop() {
+	gpio_high(cs);			// deassert CS line
+}
+
+void lcd_draw_bar(uint32_t row, uint32_t barPosition) { // pos = 0-459, so the bar can be 20px wide
+	uint32_t start = barPosition;
+	uint32_t stop = barPosition + 20;
+	lcd_pixel_stream_start();
+	for(uint32_t x = 0; x < 480; x++) {
+		lcd_pixel_stream_move_cursor(x, row*16*2);
+		if(x >= start && x < stop)
+			for(uint32_t repeat = 0; repeat < 32; repeat++)
+				lcd_pixel_stream_write_pixel(foreground_color_normal);
+		else
+			for(uint32_t repeat = 0; repeat < 32; repeat++)
+				lcd_pixel_stream_write_pixel(background_color_normal);
+	}
+	lcd_pixel_stream_stop();
+}
+
 
 void lcd_write_char(uint16_t col, uint16_t row, char c) {
 	uint16_t fgColor;
@@ -228,19 +288,36 @@ void lcd_write_char(uint16_t col, uint16_t row, char c) {
 	uint16_t xoff = col*8;
 	uint16_t yoff = row*16;
 	for(uint8_t i = 0; i < 8; i++) {
+		// draw first column of pixels
+		
+		lcd_pixel_stream_start();
+		lcd_pixel_stream_move_cursor(2*(xoff+i), 2*yoff-1);
+		
 		for(uint8_t bit = 0; bit < 16; bit++) {
 			if(font_8x16[c-32][i] & (1 << 15-bit)) {
-				lcd_write_pixel(2*(xoff+i), 2*(yoff+bit), fgColor);
-				lcd_write_pixel(2*(xoff+i), 2*(yoff+bit)+1, fgColor);
-				lcd_write_pixel(2*(xoff+i)+1, 2*(yoff+bit), fgColor);
-				lcd_write_pixel(2*(xoff+i)+1, 2*(yoff+bit)+1, fgColor);
+				lcd_pixel_stream_write_pixel(fgColor);
+				lcd_pixel_stream_write_pixel(fgColor);
 			} else {
-				lcd_write_pixel(2*(xoff+i), 2*(yoff+bit), bgColor);
-				lcd_write_pixel(2*(xoff+i), 2*(yoff+bit)+1, bgColor);
-				lcd_write_pixel(2*(xoff+i)+1, 2*(yoff+bit), bgColor);
-				lcd_write_pixel(2*(xoff+i)+1, 2*(yoff+bit)+1, bgColor);
+				lcd_pixel_stream_write_pixel(bgColor);
+				lcd_pixel_stream_write_pixel(bgColor);
 			}
 		}
+
+		lcd_pixel_stream_move_cursor(2*(xoff+i)+1, 2*yoff-1);
+		
+		// draw second (duplicate) column of pixels
+		for(uint8_t bit = 0; bit < 16; bit++) {
+			if(font_8x16[c-32][i] & (1 << 15-bit)) {
+				lcd_pixel_stream_write_pixel(fgColor);
+				lcd_pixel_stream_write_pixel(fgColor);
+			} else {
+				lcd_pixel_stream_write_pixel(bgColor);
+				lcd_pixel_stream_write_pixel(bgColor);
+			}
+		}
+
+		lcd_pixel_stream_stop();
+		
 	}
 }
 
@@ -302,7 +379,7 @@ void lcd_printf(uint16_t x, uint16_t y, char s[], ...) {
 	}
 }
 
-void lcd_tft1p4705_setup(	enum GPIO_PORT data_pins_port,
+void lcd_tft1p4705_setup(	GPIO_TypeDef *data_pins_port,
 							enum GPIO_PIN cs_pin,
 							enum GPIO_PIN rs_pin,
 							enum GPIO_PIN wr_pin,
@@ -385,4 +462,11 @@ void lcd_tft1p4705_setup(	enum GPIO_PORT data_pins_port,
 	wait(50000);
 	lcd_write_register(0x0007, 0x0017);
 	wait(50000);
+
+	// Fill the LCD with the background color
+	lcd_pixel_stream_start();
+	lcd_pixel_stream_move_cursor(0, 0);
+	for(uint32_t loop = 0; loop < (320*480); loop++)
+		lcd_pixel_stream_write_pixel(background_color_normal);
+	lcd_pixel_stream_stop();
 }

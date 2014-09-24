@@ -224,32 +224,23 @@ void gpio_setup(enum GPIO_PIN	pin,
  * @param	speed	50MHz, 10MHz or 2MHz
  * @param	pull	pull-up, pull-down or neither
  */
-void gpio_port_setup(	enum GPIO_PORT	port,
+void gpio_port_setup(	GPIO_TypeDef *port,
 						enum GPIO_MODE	mode,
 						enum GPIO_TYPE	type,
 						enum GPIO_SPEED	speed,
 						enum GPIO_PULL	pull) {
 	enum GPIO_PIN firstPin;
-	switch(port) {
-		case PORT_A:
+	if(port == GPIOA)
 			firstPin = PA0;
-			break;
-		case PORT_B:
+	else if(port == GPIOB)
 			firstPin = PB0;
-			break;
-		case PORT_C:
+	else if(port == GPIOC)
 			firstPin = PC0;
-			break;
-		case PORT_D:
+	else if(port == GPIOD)
 			firstPin = PD0;
-			break;
-		case PORT_E:
-			firstPin = PE0;
-			break;
-		case PORT_F:
+	else if(port == GPIOF)
 			firstPin = PF0;
-			break;
-	}
+
 	for(uint8_t i = 0; i < 16; i++) {
 		gpio_setup(firstPin++, mode, type, speed, pull, AF0);
 	}

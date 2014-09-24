@@ -17,7 +17,7 @@ void lcd_set_color1(int8_t y, int8_t x1, int8_t x2);
 void wait(uint32_t duration);
 
 // Initialize the LCD controller
-void lcd_tft1p4705_setup(	enum GPIO_PORT data_pins_port,
+void lcd_tft1p4705_setup(	GPIO_TypeDef *data_pins_port,
 							enum GPIO_PIN cs_pin,
 							enum GPIO_PIN rs_pin,
 							enum GPIO_PIN wr_pin,
@@ -31,6 +31,8 @@ void lcd_write_register(uint16_t reg, uint16_t val);
 
 uint16_t lcd_read_register(uint16_t reg);
 
+void lcd_draw_bar(uint32_t row, uint32_t barPosition);
+
 void lcd_write_pixel(uint16_t x, uint16_t y, uint16_t color);
 
 void lcd_write_char(uint16_t col, uint16_t row, char c);
@@ -38,5 +40,10 @@ void lcd_write_char(uint16_t col, uint16_t row, char c);
 void lcd_write_string(uint16_t x, uint16_t y, char string[]);
 
 void lcd_printf(uint16_t x, uint16_t y, char s[], ...);
+
+void lcd_pixel_stream_start();
+void lcd_pixel_stream_move_cursor(uint32_t x, uint32_t y);
+void lcd_pixel_stream_write_pixel(uint32_t pixel);
+void lcd_pixel_stream_stop();
 
 #endif

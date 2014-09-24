@@ -1,5 +1,5 @@
 // Written by Farrell Farahbod
-// Last revised on 2014-07-09
+// Last revised on 2014-08-03
 // This file is released into the public domain
 
 #include "f0lib_timers.h"
@@ -213,4 +213,167 @@ void timer_pwm_value(TIM_TypeDef *timer, enum TIMER_CHANNEL channel, uint32_t va
 		//timer->EGR |= TIM_EGR_UG;
 		//timer->SR &= ~TIM_SR_UIF;
 	}
+}
+
+/**
+ * Configure a timer as a timebase.
+ *
+ * @param timer		TIM1, TIM2, TIM3, TIM14, TIM15, TIM16 or TIM17
+ * @param prescaler	Perscaler for the 48MHz clock
+ * @param arr		Auto-reload value, determines the period
+ * @param interrupt	0=disable interrupt, 1=enable interrupt
+ */
+void timer_timebase_setup(TIM_TypeDef *timer, uint32_t prescaler, uint32_t arr, uint32_t interrupt) {
+	// enable timer clock and reset the timer
+	if(timer == TIM1) {
+		RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+		RCC->APB2RSTR |= RCC_APB2RSTR_TIM1RST;
+		RCC->APB2RSTR &= ~RCC_APB2RSTR_TIM1RST;
+	} else if(timer == TIM2) {
+		RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
+		RCC->APB1RSTR |= RCC_APB1RSTR_TIM2RST;
+		RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM2RST;
+	} else if(timer == TIM3) {
+		RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+		RCC->APB1RSTR |= RCC_APB1RSTR_TIM3RST;
+		RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM3RST;
+	} else if(timer == TIM14) {
+		RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;
+		RCC->APB1RSTR |= RCC_APB1RSTR_TIM14RST;
+		RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM14RST;
+	} else if(timer == TIM15) {
+		RCC->APB2ENR |= RCC_APB2ENR_TIM15EN;
+		RCC->APB2RSTR |= RCC_APB2RSTR_TIM15RST;
+		RCC->APB2RSTR &= ~RCC_APB2RSTR_TIM15RST;
+	} else if(timer == TIM16) {
+		RCC->APB2ENR |= RCC_APB2ENR_TIM16EN;
+		RCC->APB2RSTR |= RCC_APB2RSTR_TIM16RST;
+		RCC->APB2RSTR &= ~RCC_APB2RSTR_TIM16RST;
+	} else if(timer == TIM17) {
+		RCC->APB2ENR |= RCC_APB2ENR_TIM17EN;
+		RCC->APB2RSTR |= RCC_APB2RSTR_TIM17RST;
+		RCC->APB2RSTR &= ~RCC_APB2RSTR_TIM17RST;
+	}
+	
+	// prescaler
+	timer->PSC = prescaler - 1;
+
+	// auto-reload = number of clock ticks per event
+	timer->ARR = arr - 1;
+
+	// auto-reload preload enable
+	timer->CR1 |= TIM_CR1_ARPE;
+
+	// force update, then clear the update flag
+	timer->EGR |= TIM_EGR_UG;
+	timer->SR &= ~TIM_SR_UIF;
+
+	// generate TRGO on update events
+	timer->CR2 = TIM_CR2_MMS_1;
+
+	// enable interrupt on update events
+	if(interrupt == 1) {
+		timer->DIER |= TIM_DIER_UIE;
+		if(timer == TIM1)
+			NVIC_EnableIRQ(TIM1_BRK_UP_TRG_COM_IRQn);
+		else if(timer == TIM2)
+			NVIC_EnableIRQ(TIM2_IRQn);
+		else if(timer == TIM3)
+			NVIC_EnableIRQ(TIM3_IRQn);
+		else if(timer == TIM6)
+			NVIC_EnableIRQ(TIM6_DAC_IRQn);
+		else if(timer == TIM14)
+			NVIC_EnableIRQ(TIM14_IRQn);
+		else if(timer == TIM15)
+			NVIC_EnableIRQ(TIM15_IRQn);
+		else if(timer == TIM16)
+			NVIC_EnableIRQ(TIM16_IRQn);
+		else if(timer == TIM17)
+			NVIC_EnableIRQ(TIM17_IRQn);
+	}
+
+	// main output enable is only needed for advanced control timers
+	if(timer == TIM1)
+		timer->BDTR |= TIM_BDTR_MOE;
+
+	// enable counter
+	timer->CR1 |= TIM_CR1_CEN;
+}
+
+/**
+ * Configure a timer for one-pulse mode.
+ *
+ * @param timer		TIM1, TIM2, TIM3, TIM14, TIM15, TIM16 or TIM17
+ * @param delay		Delay in milliseconds before the pulse.
+ */
+void timer_one_pulse_setup(TIM_TypeDef *timer, uint32_t delay) {
+	// enable timer clock and reset the timer
+	if(timer == TIM1) {
+		RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+		RCC->APB2RSTR |= RCC_APB2RSTR_TIM1RST;
+		RCC->APB2RSTR &= ~RCC_APB2RSTR_TIM1RST;
+	} else if(timer == TIM2) {
+		RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
+		RCC->APB1RSTR |= RCC_APB1RSTR_TIM2RST;
+		RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM2RST;
+	} else if(timer == TIM3) {
+		RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+		RCC->APB1RSTR |= RCC_APB1RSTR_TIM3RST;
+		RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM3RST;
+	} else if(timer == TIM14) {
+		RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;
+		RCC->APB1RSTR |= RCC_APB1RSTR_TIM14RST;
+		RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM14RST;
+	} else if(timer == TIM15) {
+		RCC->APB2ENR |= RCC_APB2ENR_TIM15EN;
+		RCC->APB2RSTR |= RCC_APB2RSTR_TIM15RST;
+		RCC->APB2RSTR &= ~RCC_APB2RSTR_TIM15RST;
+	} else if(timer == TIM16) {
+		RCC->APB2ENR |= RCC_APB2ENR_TIM16EN;
+		RCC->APB2RSTR |= RCC_APB2RSTR_TIM16RST;
+		RCC->APB2RSTR &= ~RCC_APB2RSTR_TIM16RST;
+	} else if(timer == TIM17) {
+		RCC->APB2ENR |= RCC_APB2ENR_TIM17EN;
+		RCC->APB2RSTR |= RCC_APB2RSTR_TIM17RST;
+		RCC->APB2RSTR &= ~RCC_APB2RSTR_TIM17RST;
+	}
+	
+	// prescaler
+	timer->PSC = 48000 - 1;
+
+	// auto-reload = number of clock ticks per event
+	timer->ARR = delay - 1;
+
+	// one-pulse mode
+	timer->CR1 |= TIM_CR1_OPM;
+
+	// force update, then clear the update flag
+	timer->EGR |= TIM_EGR_UG;
+	timer->SR &= ~TIM_SR_UIF;
+
+	// enable interrupt on update events
+	timer->DIER |= TIM_DIER_UIE;
+	if(timer == TIM1)
+		NVIC_EnableIRQ(TIM1_BRK_UP_TRG_COM_IRQn);
+	else if(timer == TIM2)
+		NVIC_EnableIRQ(TIM2_IRQn);
+	else if(timer == TIM3)
+		NVIC_EnableIRQ(TIM3_IRQn);
+	else if(timer == TIM6)
+		NVIC_EnableIRQ(TIM6_DAC_IRQn);
+	else if(timer == TIM14)
+		NVIC_EnableIRQ(TIM14_IRQn);
+	else if(timer == TIM15)
+		NVIC_EnableIRQ(TIM15_IRQn);
+	else if(timer == TIM16)
+		NVIC_EnableIRQ(TIM16_IRQn);
+	else if(timer == TIM17)
+		NVIC_EnableIRQ(TIM17_IRQn);
+
+	// main output enable is only needed for advanced control timers
+	if(timer == TIM1)
+		timer->BDTR |= TIM_BDTR_MOE;
+
+	// enable counter
+	timer->CR1 |= TIM_CR1_CEN;
 }

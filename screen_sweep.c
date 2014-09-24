@@ -1,16 +1,12 @@
-// Written by Farrell Farahbod
-// Last revised on 2014-07-09
-// This file is released into the public domain
+// Written by: Farrell Farahbod
+// Last revised: 2014-09-15
+// License: public domain
 
 #include "f0lib/f0lib_lcd_tft1p4705.h"
-#include "config.h"
+#include "externs.h"
+#include "settings.h"
 
 enum SelectedSweepOption {MODE, POS1, POS2, STEP, PERIOD, CYCLES} currentOption;
-volatile uint16_t sweep_pos1 = 9000;
-volatile uint16_t sweep_pos2 = 21000;
-volatile uint16_t sweep_step = 70;
-volatile uint16_t sweep_period = 10;
-volatile uint32_t sweep_cycles = 0;
 
 void drawSweepScreen() {
 	/********************************
@@ -28,21 +24,27 @@ void drawSweepScreen() {
 
 	cyclesCompleted = 0;
 	currentOption = MODE;
-	lcd_set_color3(0, 7, 11); // change color for selected mode "Sweep"
-	lcd_set_color2(0, 7, 29); // change color for unselected modes
-	lcd_set_color1(0, 0, 4);  // change color for selected option "MODE:"
-	lcd_printf(0, 0, "MODE:  Sweep  3pos  2pos  1pos");
-	lcd_printf(0, 1, "POS1: %p41us    VOLT: %p13V", sweep_pos1, voltage);
-	lcd_printf(0, 2, "POS2: %p41us    CH1:  %p13A", sweep_pos2, ch1current);
-	lcd_printf(0, 3, "STEP:   %p21us    CH2:  %p13A", sweep_step, ch2current);
-	lcd_printf(0, 4, "PERIOD:   %p20ms    CH3:  %p13A", sweep_period, ch3current);
-	lcd_printf(0, 5, "CYCLES:%p70    CH4:  %p13A", sweep_cycles, ch4current);
-	lcd_printf(0, 6, "                              ");
-	lcd_printf(0, 7, "                              ");
-	lcd_printf(0, 8, ">> COMPLETED %p70 CYCLES <<", cyclesCompleted);
-	lcd_printf(0, 9, "                              ");
+	lcd_set_color3(0, 7, 11); // make "Sweep" white
+	lcd_set_color2(0, 7, 29); // make unselected modes gray
+	lcd_set_color1(0, 0, 4);  // make "MODE:" red
 
-	while(currentScreen == SWEEP); // wait for events or screen change
+	while(currentScreen == SWEEP) {
+		// redraw
+		lcd_printf(0, 0, "MODE:  Sweep  3pos  2pos  1pos");
+		lcd_printf(0, 1, "POS1: %p41us    VOLT: %p13V", sweep_pos1, voltage);
+		lcd_printf(0, 2, "POS2: %p41us    CH1:  %p13A", sweep_pos2, current1);
+		lcd_printf(0, 3, "STEP:   %p21us    CH2:  %p13A", sweep_step, current2);
+		lcd_printf(0, 4, "PERIOD:   %p20ms    CH3:  %p13A", sweep_period, current3);
+		lcd_printf(0, 5, "CYCLES:%p70    CH4:  %p13A", sweep_cycles, current4);
+		lcd_printf(0, 6, "                              ");
+		lcd_printf(0, 7, "                              ");
+		lcd_printf(0, 8, ">> COMPLETED %p70 CYCLES <<", cyclesCompleted);
+		uint32_t barPosition = TIM2->CCR1;						// range = 1600 - 4400
+		barPosition -= SERVO_PULSE_MIN / 5;						// range = 0 - 2800
+		barPosition *= 459;										// range = 0 - 1 285 200
+		barPosition /= (SERVO_PULSE_MAX - SERVO_PULSE_MIN) / 5;	// range = 0 - 459
+		lcd_draw_bar(9, barPosition);
+	}
 }
 
 void notifySweepScreen(enum Event event) {
@@ -51,7 +53,7 @@ void notifySweepScreen(enum Event event) {
 		case LEFT_BUTTON_PRESSED:
 		
 			if(currentOption == MODE)
-				currentScreen = ONE_POS;
+				{currentScreen = SPEC_AN_LIVE; return;}
 			else if(currentOption == POS1 && sweep_pos1 > SERVO_PULSE_MIN)
 				sweep_pos1 -= 5;
 			else if(currentOption == POS2 && sweep_pos2 > SERVO_PULSE_MIN)
@@ -67,7 +69,7 @@ void notifySweepScreen(enum Event event) {
 		case RIGHT_BUTTON_PRESSED:
 		
 			if(currentOption == MODE)
-				currentScreen = THREE_POS;
+				{currentScreen = THREE_POS; return;}
 			else if(currentOption == POS1 && sweep_pos1 < SERVO_PULSE_MAX)
 				sweep_pos1 += 5;
 			else if(currentOption == POS2 && sweep_pos2 < SERVO_PULSE_MAX)
@@ -126,37 +128,5 @@ void notifySweepScreen(enum Event event) {
 			}
 			break;
 		
-		case CH1_CURRENT_READING:
-
-			break;
-		
-		case CH2_CURRENT_READING:
-
-			break;
-		
-		case CH3_CURRENT_READING:
-
-			break;
-		
-		case CH4_CURRENT_READING:
-
-			break;
-
-		case VOLTAGE_READING:
-
-			break;	
-		
 	}
-
-	// redraw
-	lcd_printf(0, 0, "MODE:  Sweep  3pos  2pos  1pos");
-	lcd_printf(0, 1, "POS1: %p41us    VOLT: %p13V", sweep_pos1, voltage);
-	lcd_printf(0, 2, "POS2: %p41us    CH1:  %p13A", sweep_pos2, ch1current);
-	lcd_printf(0, 3, "STEP:   %p21us    CH2:  %p13A", sweep_step, ch2current);
-	lcd_printf(0, 4, "PERIOD:   %p20ms    CH3:  %p13A", sweep_period, ch3current);
-	lcd_printf(0, 5, "CYCLES:%p70    CH4:  %p13A", sweep_cycles, ch4current);
-	lcd_printf(0, 6, "                              ");
-	lcd_printf(0, 7, "                              ");
-	lcd_printf(0, 8, ">> COMPLETED %p70 CYCLES <<", cyclesCompleted);
-	lcd_printf(0, 9, "                              ");
 }

@@ -1,9 +1,28 @@
-// Authored by Farrell Farahbod, last revised on 2014-05-20
+// Written by Farrell Farahbod
+// Last revised on 2014-08-03
 // This file is released into the public domain
 
 #include "stm32f0xx.h"
 #include "stdarg.h"
 #include "f0lib_gpio.h"
+
+/*
+ISRs:
+
+void TIM1_BRK_UP_TRG_COM_IRQHandler(void);
+void TIM2_IRQHandler(void);
+void TIM3_IRQHandler(void);
+void TIM6_DAC_IRQHandler(void);
+void TIM14_IRQHandler(void);
+void TIM15_IRQHandler(void);
+void TIM16_IRQHandler(void);
+void TIM17_IRQHandler(void);
+
+
+Don't forget to check for AND clear the update event flag:
+
+if(timer->SR & TIM_SR_UIF != 0) { timer->SR &= ~TIM_SR_UIF; ... }
+*/
 
 /**
  * Possible GPIO usage:
@@ -80,3 +99,21 @@ void timer_pwm_period(TIM_TypeDef *timer, uint32_t period);
  * @param value		High time in half microseconds
  */
 void timer_pwm_value(TIM_TypeDef *timer, enum TIMER_CHANNEL channel, uint32_t value);
+
+/**
+ * Configure a timer as a timebase.
+ *
+ * @param timer		TIM1, TIM2, TIM3, TIM14, TIM15, TIM16 or TIM17
+ * @param prescaler	Perscaler for the 48MHz clock
+ * @param arr		Auto-reload value, determines the period
+ * @param interrupt	0=disable interrupt, 1=enable interrupt
+ */
+void timer_timebase_setup(TIM_TypeDef *timer, uint32_t prescaler, uint32_t arr, uint32_t interrupt);
+
+/**
+ * Configure a timer for one-pulse mode.
+ *
+ * @param timer		TIM1, TIM2, TIM3, TIM14, TIM15, TIM16 or TIM17
+ * @param delay		Delay in milliseconds before the pulse.
+ */
+void timer_one_pulse_setup(TIM_TypeDef *timer, uint32_t delay);

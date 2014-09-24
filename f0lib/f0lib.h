@@ -27,5 +27,6 @@
 #include "f0lib_rf_cc2500.h"
 #include "f0lib_debug.h"
 #include "f0lib_lcd_tft1p4705.h"
+#include "f0lib_flash.h"
 
 #endif
