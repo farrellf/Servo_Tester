@@ -2,11 +2,11 @@ Servo Tester / Spectrum Analyzer / Tetris-like Game
 
 Written by Farrell Farahbod < farrellfarahbod@gmail.com >
 
-=================================================================================
+===============================================================================
 
 This project started as a servo tester back in 2012. It has since grown to include a 2.4GHz spectrum analyzer and an implementation of a Tetris-like arcade game. The original code base was my first significant project with a microcontroller, and it was a phenominal showcase of my inexperience ;) In mid-2014 I began the code refactoring process and added many features. This project has reached a usable state with only one feature still unimplemented -- bluetooth. I eventually plan to stream data out via bluetooth and write an Android app to graph the history of various data points and allow remote control of the servo tester features.
 
-=================================================================================
+===============================================================================
 
 Navigating the code base:
 
@@ -15,7 +15,7 @@ Navigating the code base:
 3. The screens (servo tester modes, spectrum analyzer modes, and the arcade game) are defined in the various /screen_*.c files.
 4. My collection of anything remotely reusable is in /f0lib/. It's a crude library, not really ready for sharing, but it's used in this project. If you plan to use it elsewhere you MUST read the function implementations as many aspects are incomplete or "fragile."
 
-=================================================================================
+===============================================================================
 
 License:
 
@@ -23,7 +23,7 @@ The three files in /stm/ were NOT written by myself, see each file for it's lice
 
 All of the other files were written by myself and are released into the public domain (this is also indicated at the top of each file.) Use the code however you wish.
 
-=================================================================================
+===============================================================================
 
 Hardware used:
 
@@ -35,6 +35,6 @@ Hardware used:
 	4 10mOhm current shunt resistors (results in 6A fullscale readings with 12bits of resolution)
 	A power switch, 6V battery, lots of wires and a project box.
 
-=================================================================================
+===============================================================================
 
 A blog post with photos and video clips is available online at:  http://www.farrellf.com
