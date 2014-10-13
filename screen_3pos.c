@@ -91,7 +91,7 @@ void notify3posScreen(enum Event event) {
 
 			if(currentOption == MODE) {
 				currentOption = CYCLES;
-				lcd_set_color1(3, 15, 21);
+				lcd_set_color1(6, 0, 6);
 			} else if(currentOption == POS1) {
 				currentOption = MODE;
 				lcd_set_color1(0, 0, 4);
